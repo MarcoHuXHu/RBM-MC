@@ -1,4 +1,5 @@
 import random
+import math
 
 dimension = 3
 size = 2
@@ -80,10 +81,10 @@ def calc_energy(pos):
     return energy
 
 
-def metropolis_loop():
+def metropolis_loop(T):
     pos = random_position()
     de = -2 * calc_energy(pos)
-    if (de < 0) or ( < exp(-de/T)):
+    if (de < 0) or (random.random() < math.exp(-de/T)):
         get_spin_by_position(pos).flap()
 
 
