@@ -27,16 +27,16 @@ def get_random_spin():
     return Spin(ran)
 
 
-def initialization(d):                         # sigma is now a spin-lattice
+def initialization(d):
     if d == 1:
         sigma_1 = []
         for _ in range(size):
-            sigma_1.append(get_random_spin())  # A random spin-1/2 chain, sites' number = size
+            sigma_1.append(get_random_spin())
         return sigma_1
     else:
         sigma_d = []
         for _ in range(size):
-            sigma_d.append(initialization(d - 1)) # a size^d hyper-square lattice with random spin-1/2
+            sigma_d.append(initialization(d - 1))
     return sigma_d
 
 
@@ -60,25 +60,25 @@ def nearby(pos):
             right[i] = 0
         nears.append(left)
         nears.append(right)
-    return nears          
+    return nears
 
 
-def get_random_position():       # returns a position vector pos[x,y,z]
+def get_random_position():
     pos = []
     for _ in range(dimension):
         pos.append(random.randint(0, size - 1))
     return pos
 
 
-def get_spin_by_lattice_position(sigma, pos):  # returns spin at site = pos
+def get_spin_by_lattice_position(sigma, pos):
     getter = sigma
     for i in range(dimension):
         getter = getter[pos[i]]
     return getter
 
 
-def calc_lattice_energy(sigma, pos):           # returns energy at site = pos
-    nears  = nearby(pos)
+def calc_lattice_energy(sigma, pos):
+    nears = nearby(pos)
     energy = 0
     for i in range(len(nears)):
         energy = energy + get_spin_by_lattice_position(sigma, nears[i]).value
@@ -86,9 +86,9 @@ def calc_lattice_energy(sigma, pos):           # returns energy at site = pos
     return energy
 
 
-def metropolis(sigma, T):                      # find a random spin and flip or not
+def metropolis(sigma, T):
     pos = get_random_position()
-    de = -2 * calc_lattice_energy(sigma, pos)  # factor 2 because spin flipped
+    de = -2 * calc_lattice_energy(sigma, pos)
     if (de < 0) or (random.random() < math.exp(-de/T)):
         get_spin_by_lattice_position(sigma, pos).flip()
         return de, pos, True
@@ -145,7 +145,7 @@ def main_loops():
     while T >= minT:
         # Transient Function
         for _ in range(transient):
-            for _ in range(n):               # flip all spins
+            for _ in range(n):
                 metropolis(sigma, T)
         M = calc_total_magnetization(sigma)
         Mabs = abs(M)
@@ -158,9 +158,9 @@ def main_loops():
         for _ in range(monte_carlo_steps):
             for _ in range(n):
                 de, pos, flip = metropolis(sigma, T)
-                if flip:  
-                    E += 2 * de    # Factor 2 because we want to count E on all site, eventually would / 2
-                    v  = get_spin_by_lattice_position(sigma, pos).value
+                if flip:
+                    E += 2 * de
+                    v = get_spin_by_lattice_position(sigma, pos).value
                     M += 2 * v
                     Mabs += abs(2 * v)
 
