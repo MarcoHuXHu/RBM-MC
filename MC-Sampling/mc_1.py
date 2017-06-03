@@ -12,7 +12,10 @@ spin_dic = {0: -1, 1: 1}
 
 
 class Spin(object):
-    def __init__(self, direct):
+    def __init__(
+        self, 
+        direct
+    ):
         self.direct = direct
         self.value = spin_dic[direct]
 
@@ -37,7 +40,7 @@ def initialization(d):                         # sigma is now a spin-lattice
         sigma_d = []
         for _ in range(size):
             sigma_d.append(initialization(d - 1)) # a size^d hyper-square lattice with random spin-1/2
-    return sigma_d
+    	return sigma_d
 
 
 def get_output(sigma):
@@ -47,14 +50,14 @@ def get_output(sigma):
     return [spin.direct for spin in result]
 
 
-def nearby(pos):
+def nearby(pos):   # returns nears = ([x-1], [x+1]) for 1D, but 2D: ([x-1,y-1], [x+1,y+1]), 3D: ([x-1,y-1,z-1], [x+1,y+1,z+1])
     nears = []
     for i in range(len(pos)):
-        left = pos.copy()
+        left = pos[:]
         left[i] -= 1
         if left[i] < 0:
             left[i] = size - 1
-        right = pos.copy()
+        right = pos[:]
         right[i] += 1
         if right[i] == size:
             right[i] = 0
@@ -80,7 +83,7 @@ def get_spin_by_lattice_position(sigma, pos):  # returns spin at site = pos
 def calc_lattice_energy(sigma, pos):           # returns energy at site = pos
     nears  = nearby(pos)
     energy = 0
-    for i in range(len(nears)):
+    for i in range(len(nears)):                # always 2 sites??
         energy = energy + get_spin_by_lattice_position(sigma, nears[i]).value
     energy *= -1 * get_spin_by_lattice_position(sigma, pos).value
     return energy
@@ -102,7 +105,7 @@ def get_positions():
         for x in range(size):
             pos.append(x)
             if len(pos) == dimension:
-                res.append(pos.copy())
+                res.append(pos[:])
             else:
                 traverse(pos)
             pos.pop()
@@ -134,7 +137,7 @@ def main_loops():
     E = 0; Esq = 0; Esq_avg = 0; E_avg = 0; etot = 0; etotsq = 0
     M = 0; Msq = 0; Msq_avg = 0; M_avg = 0; mtot = 0; mtotsq = 0
     Mabs = 0; Mabs_avg = 0; mabstot = 0; mqtot = 0
-    T = 5.0; minT = 0.5; deltT = 0.1
+    T = 5; minT = 0.5; deltT = 0.1
 
     ft = open('temperature.txt', 'w')
     feavg = open('E_avg.txt', 'w'); fesqavg = open('Esq_avg.txt', 'w')

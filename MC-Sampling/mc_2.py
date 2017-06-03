@@ -4,8 +4,8 @@ import math
 import random
 
 
-dimension = 3
-size = 2
+dimension = 2
+size = 16
 
 # direct : value
 spin_dic = {0: -1, 1: 1}
@@ -47,14 +47,14 @@ def get_output(sigma):
     return [spin.direct for spin in result]
 
 
-def nearby(pos):
+def nearby(pos):   # returns all nearest neighbors
     nears = []
     for i in range(len(pos)):
-        left = pos.copy()
+        left = list(pos)
         left[i] -= 1
         if left[i] < 0:
             left[i] = size - 1
-        right = pos.copy()
+        right = list(pos)
         right[i] += 1
         if right[i] == size:
             right[i] = 0
@@ -80,7 +80,7 @@ def get_spin_by_lattice_position(sigma, pos):  # returns spin at site = pos
 def calc_lattice_energy(sigma, pos):           # returns energy at site = pos
     nears  = nearby(pos)
     energy = 0
-    for i in range(len(nears)):
+    for i in range(len(nears)):               
         energy = energy + get_spin_by_lattice_position(sigma, nears[i]).value
     energy *= -1 * get_spin_by_lattice_position(sigma, pos).value
     return energy
@@ -102,10 +102,11 @@ def get_positions():
         for x in range(size):
             pos.append(x)
             if len(pos) == dimension:
-                res.append(pos.copy())
+                res.append(list(pos))
             else:
                 traverse(pos)
             pos.pop()
+            
     traverse([])
     return res
 
@@ -140,8 +141,9 @@ def main_loops():
     feavg = open('E_avg.txt', 'w'); fesqavg = open('Esq_avg.txt', 'w')
     fmavg = open('M_avg.txt', 'w'); fmsqavg = open('Msq_avg.txt', 'w')
     fmabsavg = open('Mabs_avg.txt', 'w')
+    ftmp = open('temperary_file','w')
 
-    sigma = initialization(dimension)
+    sigma = initialization(dimension)        
     while T >= minT:
         # Transient Function
         for _ in range(transient):
@@ -150,6 +152,8 @@ def main_loops():
         M = calc_total_magnetization(sigma)
         Mabs = abs(M)
         E = calc_total_energy(sigma)
+        
+     
 
         # Initialize summation variables at each temperature step
         etot = 0; etotsq = 0; mtot = 0; mtotsq = 0; mabstot = 0; mqtot = 0
@@ -170,7 +174,13 @@ def main_loops():
             mtot += M
             mtotsq += M * M
             mqtot += M * M * M * M
-            mabstot += (math.sqrt(M * M))
+            mabstot += abs(M)
+        
+        
+#         print("{:.9f}".format(etot))
+#         print("{:.9f}".format(mtot))
+#         print("{:.9f}".format(mabstot))
+        
 
         # Average observables
         E_avg = etot * norm; Esq_avg = etotsq * norm;
