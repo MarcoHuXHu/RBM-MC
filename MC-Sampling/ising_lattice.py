@@ -1,5 +1,3 @@
-import numpy as np
-
 import math
 import random
 
@@ -63,7 +61,8 @@ class lattice(object):
 		result = self.config
 		for _ in range(self.dim - 1):
 			result = sum(result, [])
-		return [spin.state for spin in result]
+		return ([spin.state for spin in result],
+                [spin.value() for spin in result])
     	
 	def nearby(self, pos):  
 		nears = []
@@ -80,27 +79,27 @@ class lattice(object):
 			nears.append(right)
 		return nears 
     	
-	def get_random_position(self):       # returns a position vector pos[x,y,z]
+	def get_random_position(self):       # position vector pos[x,y,z]
 		pos = []
 		for _ in range(self.dim):
 			pos.append(random.randint(0, self.size - 1))
 		return pos
     	
-	def get_spin_by_lattice_position(self, pos):  # returns spin at site = pos
+	def get_spin_by_lattice_position(self, pos):  # spin at site = pos
 		getter = self.config
 		for i in range(self.dim):
 			getter = getter[pos[i]]
 		return getter
     	
-	def site_energy(self, pos):           # returns energy at site = pos
+	def site_energy(self, pos):           # energy at site = pos
 		nears = self.nearby(pos)
 		energy = 0
 		for i in range(len(nears)):
-			energy = energy + self.get_spin_by_lattice_position(nears[i]).value()
+			energy += self.get_spin_by_lattice_position(nears[i]).value()
 		energy *= -1 * self.get_spin_by_lattice_position(pos).value()
 		return energy
     	
-	def metropolis(self, T):                      # find a random spin and flip or not
+	def metropolis(self, T):                      # flip a random spin
 		pos = self.get_random_position()
 		de = -2 * self.site_energy(pos)
 		if (de < 0) or (random.random() < math.exp(-de/T)):

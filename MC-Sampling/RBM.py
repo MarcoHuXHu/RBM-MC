@@ -1,22 +1,14 @@
 from __future__ import print_function
 
 import timeit
-
-try:
-    import PIL.Image as Image
-except ImportError:
-    import Image
+import pickle
 
 import numpy
 
 import theano
 import theano.tensor as T
-import os
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
-
-from utils import tile_raster_images
-from logistic_sgd import load_data
 
 
 class RBM(object):
@@ -239,14 +231,14 @@ class RBM(object):
         return cross_entropy
 
 
-def test_rbm(learning_rate=0.1, training_epochs=5,
-             dataset='mnist.pkl.gz', batch_size=20,
-             n_chains=20, n_samples=10, output_folder='rbm_plots',
-             n_hidden=500):
+def rbm_training(learning_rate=0.1,
+			  training_epochs=5,
+              batch_size=20, 
+              n_hidden=4, 
+              dataset = 'some.dat'
+              ):
     """
-    Demonstrate how to train and afterwards sample from it using Theano.
-
-    This is demonstrated on MNIST.
+    Training an RBM for Ising-configs at certain temperature, using Theano.
 
     :param learning_rate: learning rate used for training the RBM
 
@@ -261,29 +253,20 @@ def test_rbm(learning_rate=0.1, training_epochs=5,
     :param n_samples: number of samples to plot for each chain
 
     """
-    datasets = load_data(dataset)
+    
+    with open(dataset, 'rb') as train_data:
+    	train_set_x = theano.shared(value = numpy.array(pickle.load(train_data),
+    												    dtype = theano.config.floatX
+    												    )
+    								)
+    n_visible = train_set_x.get_value(borrow=True).shape[1]
 
-    train_set_x, train_set_y = datasets[0]
-    train_set_x = theano.shared(train_set_x[0:100,:].eval())
-
-#	  # mini-dataset	
-#     train_set_x = theano.shared(value = numpy.array([[1,1,1,0,0,0],
-#     												 [1,0,1,0,0,0],
-#     												 [1,1,1,0,0,0],
-#     												 [0,0,1,1,1,0], 
-#     												 [0,0,1,1,0,0],
-#     												 [0,0,1,1,1,0]],
-#     										     	dtype=theano.config.floatX
-#     										       )
-#     						    )
-
-
-    # compute number of minibatches for training, validation and testing
+    # number of minibatches
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
 
     # allocate symbolic variables for the data
-    index = T.lscalar()    # index to a [mini]batch
-    x = T.matrix('x')      # the data is presented as rasterized images
+    index = T.lscalar()
+    x = T.matrix('x')      
 
     rng = numpy.random.RandomState(123)
     theano_rng = RandomStreams(rng.randint(2 ** 30))
@@ -295,7 +278,7 @@ def test_rbm(learning_rate=0.1, training_epochs=5,
 
     # construct the RBM class
     rbm = RBM(input = x, 
-    		  n_visible=28 * 28,
+    		  n_visible=n_visible,
               n_hidden=n_hidden, 
               numpy_rng=rng, 
               theano_rng=theano_rng)
@@ -314,34 +297,21 @@ def test_rbm(learning_rate=0.1, training_epochs=5,
     #################################
     #     Training the RBM          #
     #################################
-#     if not os.path.isdir(output_folder):
-#         os.makedirs(output_folder)
-#     os.chdir(output_folder)
 
     start_time = timeit.default_timer()
 
     # in every epoch, sweep the whole data-set
     for epoch in range(training_epochs):
-
         mean_cost = []
-        for batch_index in range(n_train_batches): # minimize mean-cost batch by batch, not the whole set
-            mean_cost += [train_rbm(batch_index)]  # cost in each epoch is proportional to batch-number
-
+        for batch_index in range(n_train_batches): 
+            mean_cost += [train_rbm(batch_index)]  
 #         print('Training epoch %d, cost is ' % epoch, numpy.mean(mean_cost))
 
-
     end_time = timeit.default_timer()
-
     pretraining_time = (end_time - start_time) 
 
+    print ('RBM training finished')
     print ('Training took %f minutes' % (pretraining_time / 60.))
-
-
     
-    
+    return rbm.W, rbm.vbias, rbm.hbias
 
-
-
-
-if __name__ == '__main__':
-    test_rbm()
