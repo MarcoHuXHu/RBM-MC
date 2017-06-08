@@ -130,29 +130,27 @@ class lattice(object):
 
 
 class State(object):	
-	def __init__(n_spins,
-				 dic
-				):
+	def __init__(n_spins, dic):
 		dic = {}
 		self.n_spins = n_spins
 		self.dic = dic
-        self.components = dic.keys()       # components are lattice objects
-        self.coefficients = dic.values()
-        self.normalize()
+        	self.components = dic.keys()       # components are lattice objects
+        	self.coefficients = dic.values()
+        	self.normalize()
 		
-# 	def str(self):
-# 		output = ''
-# 		
-# 		for cpt in self.components:
-# 			string = str(self.dic[cpt]) + '|'
-# 			states, values = get_output(cpt)
-# 			for value in values:
-# 				string += str(value) + ', '
-# 			string += '>' + ' +'
-# 			output += string
-# 			
-#         output = output[:-1]
-#         return output
+	def str(self):
+		output = ''
+		
+		for cpt in self.components:
+			string = str(self.dic[cpt]) + '|'
+			states, values = get_output(cpt)
+			for value in values:
+				string += str(value) + ', '
+			string += '>' + ' +'
+			output += string
+			
+        	output = output[:-1]
+        	return output
 
 	def normalize(self):
 		z = sum(np.abs(self.coefficients))
@@ -192,36 +190,36 @@ class State(object):
 		
 	def single_spin_operation(self, site, matrix):
 		cpts = self.components
-        for cpt in cpts:
-            spin = cpt.get_spin_by_lattice_position(site)
-            spin_vector = spin.vector()
-            spin_vector = matrix.dot(spin_vector)
-            site_dic = {}
-            for i in range(spin_vector.shape[0]):
-                if spin_vector[i]:
-                    site_dic[i] = spin_vector[i]
-            for i in range(len(site_dic)):
-                fig = cpt.config
-                fig[tuple(site)] = Spin(state = i)
-                lat = lattice(dim = cpt.dim, size = cpt.size, config = fig)
-                coef = site_dic[i] * self.dic[cpt]
-                if lat in self.components:
-                    self.dic[lat] += coef
-                else:
-                    self.dic[lat]  = coef
+        	for cpt in cpts:
+            		spin = cpt.get_spin_by_lattice_position(site)
+            		spin_vector = spin.vector()
+            		spin_vector = matrix.dot(spin_vector)
+            		site_dic = {}
+            		for i in range(spin_vector.shape[0]):
+                		if spin_vector[i]:
+                    			site_dic[i] = spin_vector[i]
+            		for i in range(len(site_dic)):
+                		fig = cpt.config
+                		fig[tuple(site)] = Spin(state = i)
+                		lat = lattice(dim = cpt.dim, size = cpt.size, config = fig)
+                		coef = site_dic[i] * self.dic[cpt]
+                		if lat in self.components:
+                    			self.dic[lat] += coef
+                		else:
+                    			self.dic[lat]  = coef
 		return self
 
 	def operated_state(self, operator):
 		rot = 0
-        for pos in operator.positions:
-            state = self
-            matrices = operator.dic[str(pos)]
-            for i in range(len(pos)):
-                site = pos[i]
-                matrix = matrices[i]
-                state = state.single_spin_operation(site = site, matrix = matrix)
-            rlt += state
-        return rlt
+        	for pos in operator.positions:
+            		state = self
+           		matrices = operator.dic[str(pos)]
+            		for i in range(len(pos)):
+                		site = pos[i]
+                		matrix = matrices[i]
+                		state = state.single_spin_operation(site = site, matrix = matrix)
+            		rlt += state
+        	return rlt
 
 
 
@@ -230,41 +228,41 @@ class State(object):
 class operator(object):
 	def __init__(self, spin, positions = None, p_symbols = None):
 		self.spin = spin
-        self.symbols = p_symbols
+        	self.symbols = p_symbols
         
-        if p_symbols == None:
-            self.dic = None
-            self.matrices = None
-            self.positions = None
-        else:
-            matrices = []
-            i = -1
-            for p_symbol in self.symbols:
-                i = i+1
-                matrices.append([])   # list object for each term
-                for p_sbl in p_symbol:
-                    matrices[i].append(SpinMatrices(spin, sbl)) # list of arrays on each site
-            self.dic = {}
-            for i in range(len(positions)):
-                positions[i] = sorted(positions[i])     # element in positions is made of position-coordinates, we sort them
-                self.dic[str(positions[i])] = matrices[i]
-            self.matrices = self.dic.values()
-            self.positions = sorted(positions)          # Eventually we sort the terms
+        	if p_symbols == None:
+            		self.dic = None
+            		self.matrices = None
+            		self.positions = None
+        	else:
+            		matrices = []
+            		i = -1
+            		for p_symbol in self.symbols:
+                		i = i+1
+                		matrices.append([])   # list object for each term
+                		for p_sbl in p_symbol:
+                    			matrices[i].append(SpinMatrices(spin, sbl)) # list of arrays on each site
+            		self.dic = {}
+            		for i in range(len(positions)):
+                		positions[i] = sorted(positions[i])     # element in positions is made of position-coordinates, we sort them
+                		self.dic[str(positions[i])] = matrices[i]
+            		self.matrices = self.dic.values()
+            		self.positions = sorted(positions)          # Eventually we sort the terms
 
 	def __add__(self, other):
 		rlt = operator(spin = self.spin, positions = None, symbols = None) # When add terms, we don't care about symbols
-        positions = list(other.positions)
-        dic = dict(other.dic)
-        rlt.dic = self.dic.update(dic)
-        dic_additive = {}
-        for pos in self.positions:
-            if pos in other.positions:
-                dic_additive[str(pos)] = list( np.asarray(self.dic[str(pos)]) + np.asarray(other.dic[str(pos)]) )
-            else:
-                positions.append(pos) # creat the positions list for rlt
-        rlt.dic = rlt.dic.update(dic_additive)
-        rlt.positions = rlt.sorted_positions()
-        return rlt
+        	positions = list(other.positions)
+        	dic = dict(other.dic)
+        	rlt.dic = self.dic.update(dic)
+        	dic_additive = {}
+        	for pos in self.positions:
+            		if pos in other.positions:
+                		dic_additive[str(pos)] = list( np.asarray(self.dic[str(pos)]) + np.asarray(other.dic[str(pos)]) )
+            		else:
+                		positions.append(pos) # creat the positions list for rlt
+        	rlt.dic = rlt.dic.update(dic_additive)
+        	rlt.positions = rlt.sorted_positions()
+        	return rlt
 
 	def __radd__(self, other):
 		if other == 0:
@@ -274,59 +272,58 @@ class operator(object):
 
 	def __sub__(self, other):
 		rlt = operator(spin = self.spin, positions = None, symbols = None) # When subtract terms, we don't care about symbols
+        	positions = list(other.positions)
+		
+        	dic = dict(other.dic)
+        	for value in dic.values():
+            		for site_matrix in value:
+                		site_matrix = - site_matrix
+        	rlt.dic = self.dic.update(dic)
         
-        positions = list(other.positions)
-        
-        dic = dict(other.dic)
-        for value in dic.values():
-            for site_matrix in value:
-                site_matrix = - site_matrix
-        rlt.dic = self.dic.update(dic)
-        
-        dic_additive = {}
-        for pos in self.positions:
-            if pos in other.positions:
-                sites_matrices = np.asarray(self.dic[str(pos)]) - np.asarray(other.dic[str(pos)])
-                dic_additive[str(pos)] = []
-                for site_matrix in sites_matrices:
-                    dic_additive[str(pos)].append(site_matrix) # add terms acting on the same site
-            else:
-                positions.append(pos) # creat the positions list for rlt
-        rlt.dic = rlt.dic.update(dic_additive)
-        rlt.positions = sorted(rlt.positions)
-        return rlt
+        	dic_additive = {}
+        	for pos in self.positions:
+            		if pos in other.positions:
+                		sites_matrices = np.asarray(self.dic[str(pos)]) - np.asarray(other.dic[str(pos)])
+                		dic_additive[str(pos)] = []
+                		for site_matrix in sites_matrices:
+                    			dic_additive[str(pos)].append(site_matrix) # add terms acting on the same site
+            		else:
+                		positions.append(pos) # creat the positions list for rlt
+        	rlt.dic = rlt.dic.update(dic_additive)
+        	rlt.positions = sorted(rlt.positions)
+        	return rlt
 
 
 	def __mul__(self, other):
 		rlt = operator(spin = self.spin, positions = None, symbols = None) # When multiply terms, we don't care about symbols
-        rlt,positions = []
-        rlt.dic = {}
-        for pos_a in self.positions:
-            for pos_b in other.positions:
-                
-                pos = list(pos_a)
-                mat = list(self.dic[str(pos_a)])
-                mat_extra = list(other.dic[str(pos_b)])
-                
-                for site in pos_b:
-                    if site in pos:
-                        mat[pos.index(site)] *= mat_extra[pos_b.index(site)]
-                    else:
-                        pos.append(site)
-                        mat.append(mat_extra[pos_b.index(site)])
+        	rlt,positions = []
+        	rlt.dic = {}
+        	for pos_a in self.positions:
+            		for pos_b in other.positions:
 
-                mini_dic = {}
-                for i in range(len(pos)):
-                    mini_dic[pos[i]] = mat[i]
+                		pos = list(pos_a)
+                		mat = list(self.dic[str(pos_a)])
+                		mat_extra = list(other.dic[str(pos_b)])
                 
-                pos = sorted(pos)
-                rlt.positions.append(pos)
-                if str(pos) in rlt.dic.keys():
-                    rlt.dic[str(pos)] = list( np.asarray(rlt.dic[str(pos)]) + np.asarray(mini_dic.values()) )
-                else:
-                    rlt.dic[str(pos)] = mini_dic.values()
-        rlt.positions = sorted(rlt.positions)
-        return rlt
+                		for site in pos_b:
+                    			if site in pos:
+                        			mat[pos.index(site)] *= mat_extra[pos_b.index(site)]
+                    			else:
+                        			pos.append(site)
+                        			mat.append(mat_extra[pos_b.index(site)])
+
+                		mini_dic = {}
+                		for i in range(len(pos)):
+                    			mini_dic[pos[i]] = mat[i]
+                
+                		pos = sorted(pos)
+                		rlt.positions.append(pos)
+                		if str(pos) in rlt.dic.keys():
+                    			rlt.dic[str(pos)] = list( np.asarray(rlt.dic[str(pos)]) + np.asarray(mini_dic.values()) )
+                		else:
+                    			rlt.dic[str(pos)] = mini_dic.values()
+        	rlt.positions = sorted(rlt.positions)
+        	return rlt
 
 	def __rmul__(self, other):
 		for cpt in self.dic.keys():
@@ -338,8 +335,7 @@ class operator(object):
 
 def SpinMatrices(spin, powered_symbol):
     if powered_symbol == []:
-        return np.asarray([])
-    
+        return np.asarray([])   
     symbol= powered_symbol[0]
     power = powered_symbol[1]
     dim = int(spin*2+1)
