@@ -210,7 +210,7 @@ class State(object):
 		return self
 
 	def operated_state(self, operator):
-		rot = 0
+		rlt = 0
         	for pos in operator.positions:
             		state = self
            		matrices = operator.dic[str(pos)]
