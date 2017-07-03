@@ -2,7 +2,7 @@ import math
 import random
 import operator as op_external
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 
 
 mag = 0.5
@@ -14,13 +14,15 @@ class Spin(object):
                  state = None
                  ):
     	dic = {}
-        dic[None] = None
+#         dic[None] = None
     	for i in range(int(mag*2+1)):
     		dic[i] = i - mag
     	self.mag = magnitude
     	self.dic = dic
     	self.state = state
-    	self.value = self.dic[self.state]
+    	if state == None:
+    		self.randomize()
+    	self.value = self.dic[self.state]    	
     	
     def flip(self):
         self.state = 1 - self.state
@@ -32,9 +34,10 @@ class Spin(object):
     	s = Spin(state = self.state)
     	return s
     	
-    def vectorize(self):
+    def vector(self):
     	vec = np.zeros(int(mag*2+1))
     	vec[self.state] = 1
+    	return vec
 #    	vec = tf.constant(vec)
 
 
@@ -70,7 +73,7 @@ class lattice(object):
 		for _ in range(self.dim - 1):
 			result = sum(result, [])
 		return ([spin.state for spin in result],
-                [spin.value() for spin in result])
+                [spin.value for spin in result])
     	
 	def nearby(self, pos):  
 		nears = []
@@ -128,45 +131,47 @@ class lattice(object):
 
 
 class State(object):	
-	def __init__(n_spins, dic):
-		dic = {}
-		self.n_spins = n_spins
+	def __init__(self, dic):
 		self.dic = dic
         	self.components = dic.keys()       # components are lattice objects
         	self.coefficients = dic.values()
         	self.normalize()
+        	self.n_spins = (dic.keys()[0].size) ** (dic.keys()[0].dim)
 		
 	def str(self):
-		output = ''
-		
+		output = ''		
 		for cpt in self.components:
-			string = str(self.dic[cpt]) + '|'
-			states, values = get_output(cpt)
-			for value in values:
-				string += str(value) + ', '
-			string += '>' + ' +'
-			output += string
+			if self.dic[cpt] :
+				if self.dic[cpt] == 1:
+					string = '|'
+				else:
+					string = str(self.dic[cpt]) + '|'
+				states, values = cpt.get_output()
+				for value in values:
+					string += str(value) + ', '
+				string += '>' + ' +'
+				output += string
 			
         	output = output[:-1]
         	return output
 
 	def normalize(self):
-		z = sum(np.abs(self.coefficients))
+		z = np.sqrt( sum(np.square(np.abs(self.coefficients))) )
 		self.coefficients = np.multiply(self.coefficients, (1/z))
 		return self
 			
 	def __add__(self, other):
 		if not self.n_spins == other.n_spins:
 			raise TypeError("two states must contain same number of spins")
-		states = State()
-		for cpt in self.components:
-			states.dic[cpt] = self.dic[cpt]
+		states = self
 		for cpt in other.components:
 			if cpt in states.dic.keys():
 				states.dic[cpt] += other.dic[cpt]
 			else:
-				states.dic[cpt] += other.dic[cpt]
+				states.dic[cpt]  = other.dic[cpt]
 		states.normalize()
+		states.components = states.dic.keys()
+		states.coefficitents = states.dic.values()
 		return states
 		
 	def __radd__(self, other):
@@ -187,36 +192,46 @@ class State(object):
 		return self.normalize()
 		
 	def single_spin_operation(self, site, matrix):
-		cpts = self.components
-        	for cpt in cpts:
+		dic = {}
+        	for cpt in self.components:
             		spin = cpt.get_spin_by_lattice_position(site)
             		spin_vector = spin.vector()
             		spin_vector = matrix.dot(spin_vector)
-            		site_dic = {}
+            		site_dic = {}     		
             		for i in range(spin_vector.shape[0]):
                 		if spin_vector[i]:
-                    			site_dic[i] = spin_vector[i]
-            		for i in range(len(site_dic)):
-                		fig = cpt.config
-                		fig[tuple(site)] = Spin(state = i)
+                    			site_dic[i] = spin_vector[i]	# non-zero elements
+            		for i in site_dic.keys():
+                		fig = list(cpt.config)
+                		fig[site[0]] = Spin(state = i)		# only for 1D case
                 		lat = lattice(dim = cpt.dim, size = cpt.size, config = fig)
                 		coef = site_dic[i] * self.dic[cpt]
-                		if lat in self.components:
-                    			self.dic[lat] += coef
-                		else:
-                    			self.dic[lat]  = coef
-		return self
+                		dic[lat] = coef                  
+		rlt = State(dic = dic)
+		return rlt
 
+<<<<<<< Updated upstream
 	def operated_state(self, operator):
 		rlt = 0
+=======
+	def operated(self, operator):
+		rlt = 0
+		print
+>>>>>>> Stashed changes
         	for pos in operator.positions:
             		state = self
-           		matrices = operator.dic[str(pos)]
+            		st, vl = state.components[0].get_output()
+            		print(st)
+            		matrices = operator.dic[str(pos)]
             		for i in range(len(pos)):
                 		site = pos[i]
                 		matrix = matrices[i]
+                		print(matrix, site)
                 		state = state.single_spin_operation(site = site, matrix = matrix)
+                	st, vl = state.components[0].get_output()
+                	print(st)
             		rlt += state
+            		print
         	return rlt
 
 
@@ -224,21 +239,29 @@ class State(object):
 
 
 class operator(object):
-	def __init__(self, spin, positions = None, p_symbols = None):
+# 	operator has attributes:
+# 		spin magnitude
+# 		positions-groups
+# 		symbols-groups
+# 		matrices-groups
+# 		dic = { str(positions) : matrices }
+# 	Note:
+# 		positions and matrices need to be updated by hand if any change, since not functions
+	def __init__(self, spin = mag, positions = None, symbols = None):
 		self.spin = spin
-        	self.symbols = p_symbols
+        	self.symbols = symbols
         
-        	if p_symbols == None:
+        	if symbols == None:
             		self.dic = None
             		self.matrices = None
             		self.positions = None
         	else:
             		matrices = []
             		i = -1
-            		for p_symbol in self.symbols:
+            		for symbol in self.symbols:
                 		i = i+1
                 		matrices.append([])   # list object for each term
-                		for p_sbl in p_symbol:
+                		for sbl in symbol:
                     			matrices[i].append(SpinMatrices(spin, sbl)) # list of arrays on each site
             		self.dic = {}
             		for i in range(len(positions)):
@@ -246,20 +269,36 @@ class operator(object):
                 		self.dic[str(positions[i])] = matrices[i]
             		self.matrices = self.dic.values()
             		self.positions = sorted(positions)          # Eventually we sort the terms
+            		
+             		
+# #     	def str(self):
+# #     		output = ''
+# #     		for i in range(len(self.positions)):
+# #     			output += '('
+# #     			position = self.positions[i]
+# #     			symbol = self.symbols[i]
+# #     			for j in range(len(position)):
+# #     				output += '[' + symbol[j] + ',' + str(position[j]) +']' + '*'
+# #     			output = output[:-1]
+# #     			output += ')' + '+'
+# #     		output = output[:-1]
+# #     		return output
+ 
 
 	def __add__(self, other):
 		rlt = operator(spin = self.spin, positions = None, symbols = None) # When add terms, we don't care about symbols
         	positions = list(other.positions)
         	dic = dict(other.dic)
-        	rlt.dic = self.dic.update(dic)
+        	rlt.dic = self.dic
+        	rlt.dic.update(dic)
         	dic_additive = {}
         	for pos in self.positions:
             		if pos in other.positions:
                 		dic_additive[str(pos)] = list( np.asarray(self.dic[str(pos)]) + np.asarray(other.dic[str(pos)]) )
             		else:
                 		positions.append(pos) # creat the positions list for rlt
-        	rlt.dic = rlt.dic.update(dic_additive)
-        	rlt.positions = rlt.sorted_positions()
+        	rlt.dic.update(dic_additive)
+        	rlt.positions = sorted(positions)
         	return rlt
 
 	def __radd__(self, other):
@@ -293,8 +332,10 @@ class operator(object):
 
 
 	def __mul__(self, other):
+		if type(other) == int:
+			return other * self
 		rlt = operator(spin = self.spin, positions = None, symbols = None) # When multiply terms, we don't care about symbols
-        	rlt,positions = []
+        	rlt.positions = []
         	rlt.dic = {}
         	for pos_a in self.positions:
             		for pos_b in other.positions:
@@ -305,27 +346,27 @@ class operator(object):
                 
                 		for site in pos_b:
                     			if site in pos:
-                        			mat[pos.index(site)] *= mat_extra[pos_b.index(site)]
+                        			mat[pos.index(site)] = mat[pos.index(site)].dot( mat_extra[pos_b.index(site)] )
                     			else:
                         			pos.append(site)
                         			mat.append(mat_extra[pos_b.index(site)])
-
-                		mini_dic = {}
-                		for i in range(len(pos)):
-                    			mini_dic[pos[i]] = mat[i]
                 
-                		pos = sorted(pos)
-                		rlt.positions.append(pos)
-                		if str(pos) in rlt.dic.keys():
-                    			rlt.dic[str(pos)] = list( np.asarray(rlt.dic[str(pos)]) + np.asarray(mini_dic.values()) )
+                		posr = sorted(pos)
+                		mats = []
+                		for site in posr:
+                			mats.append(mat[pos.index(site)])
+                			
+                		rlt.positions.append(posr)
+                		if str(posr) in rlt.dic.keys():
+                    			rlt.dic[str(posr)] = list( np.asarray(rlt.dic[str(posr)]) + np.asarray(mats) )
                 		else:
-                    			rlt.dic[str(pos)] = mini_dic.values()
+                    			rlt.dic[str(posr)] = mats
         	rlt.positions = sorted(rlt.positions)
         	return rlt
 
 	def __rmul__(self, other):
 		for cpt in self.dic.keys():
-			self.dic[cpt] *= other
+			self.dic[cpt][0] *= other
 		return self
 
 
@@ -334,10 +375,15 @@ class operator(object):
 def SpinMatrices(spin, powered_symbol):
     if powered_symbol == []:
         return np.asarray([])   
-    symbol= powered_symbol[0]
-    power = powered_symbol[1]
+    if type(powered_symbol) == str:
+    	symbol = powered_symbol
+    	power = 1
+    else:
+    	symbol= powered_symbol[0]
+    	power = powered_symbol[1]
+    
     dim = int(spin*2+1)
-    mat = np.zeros(dim)
+    mat = np.zeros([dim,dim])
     
     if (symbol == 'z') or (symbol == 'sz') or (symbol == 3):
         sz = spin
@@ -345,13 +391,13 @@ def SpinMatrices(spin, powered_symbol):
             mat[i,i] = sz
             sz = sz - 1
 
-    if (symbol == '+') or (symol == 's+'):
+    if (symbol == '+') or (symbol == 's+'):
         for i in range(dim-1):
-            mat[i, i+1] = 1.0
+            mat[i,i+1] = 1.0
 
-    if (symbol == '-') or (symol == 's-'):
+    if (symbol == '-') or (symbol == 's-'):
         for i in range(dim-1):
-            mat[i+1, i] = 1.0
+            mat[i+1,i] = 1.0
 
     if (symbol == 'x') or (symbol == 'sx') or (symbol == 1):
         for i in range(dim-1):
@@ -360,7 +406,7 @@ def SpinMatrices(spin, powered_symbol):
 
     if (symbol == 'y') or (symbol == 'sy') or (symbol == 2):
         for i in range(dim-1):
-            mat[i, i+1] =  0.5
+            mat[i,i+1] =  0.5
             mat[i+1,i] = -0.5
         mat = mat * (-1j)
 
