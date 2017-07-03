@@ -65,7 +65,9 @@ class lattice(object):
 		else:
 			fig_d = []
 			for _ in range(self.size):
-				fig_d.append(lattice(dim=(self.dim-1),size=self.size).config)
+				fig_d.append(lattice(dim=(self.dim-1),
+									 size=self.size
+									).config)
 			self.config = fig_d
                 
 	def get_output(self):
@@ -210,14 +212,9 @@ class State(object):
 		rlt = State(dic = dic)
 		return rlt
 
-<<<<<<< Updated upstream
-	def operated_state(self, operator):
-		rlt = 0
-=======
 	def operated(self, operator):
 		rlt = 0
 		print
->>>>>>> Stashed changes
         	for pos in operator.positions:
             		state = self
             		st, vl = state.components[0].get_output()
